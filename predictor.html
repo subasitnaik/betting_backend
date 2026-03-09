@@ -36,6 +36,27 @@
       margin-top: 16px;
     }
     .status { color: #6e7681; font-size: 12px; margin-top: 8px; }
+    button {
+      background: #00FF41;
+      color: #0a0a0a;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover { opacity: 0.9; }
+    input {
+      background: #0d1117;
+      border: 1px solid #00FF41;
+      color: #00FF41;
+      padding: 10px 12px;
+      border-radius: 8px;
+      width: 100%;
+    }
+    label { display: block; color: #00FF41; margin-bottom: 4px; }
+    .settings-msg { margin-top: 8px; font-size: 14px; }
   </style>
 </head>
 <body>
@@ -44,6 +65,17 @@
     <p class="live-feed" id="feed">Live feed will appear here…</p>
     <p class="status" id="status">Waiting for predictor client.</p>
     <p class="note">Connect the Predictor app to the 1-min game. Data is broadcast to the configured Telegram channel.</p>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top: 0;">Telegram Broadcast Settings</h2>
+    <p style="color: #7FD957; font-size: 13px; margin-bottom: 12px;">Bot token from @BotFather. Channel ID (e.g. @channelname or -1001234567890).</p>
+    <label>Bot Token</label>
+    <input type="password" id="telegramToken" placeholder="123456:ABC-DEF..." style="margin: 8px 0 16px 0;" autocomplete="off" />
+    <label>Channel ID</label>
+    <input type="text" id="telegramChannel" placeholder="@mychannel or -1001234567890" style="margin: 8px 0 16px 0;" />
+    <button type="button" id="btnSaveTelegram" style="margin-top: 8px;">Save</button>
+    <div id="telegramMsg" class="settings-msg"></div>
   </div>
   <script>
     const API = '/api/predictor';
@@ -69,6 +101,44 @@
     }
     poll();
     setInterval(poll, 2000);
+
+    const base = window.location.origin;
+    async function loadTelegramSettings() {
+      try {
+        const res = await fetch(base + '/api/settings');
+        const s = await res.json();
+        document.getElementById('telegramToken').value = s.telegramBotToken || '';
+        document.getElementById('telegramChannel').value = s.telegramChannelId || '';
+      } catch (e) {
+        document.getElementById('telegramMsg').textContent = 'Could not load settings.';
+        document.getElementById('telegramMsg').style.color = '#ff6b6b';
+      }
+    }
+    async function saveTelegramSettings() {
+      const msgEl = document.getElementById('telegramMsg');
+      try {
+        const token = document.getElementById('telegramToken').value.trim();
+        const channelId = document.getElementById('telegramChannel').value.trim();
+        const res = await fetch(base + '/api/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ telegramBotToken: token, telegramChannelId: channelId })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          msgEl.textContent = data.error || 'Save failed';
+          msgEl.style.color = '#ff6b6b';
+          return;
+        }
+        msgEl.textContent = 'Saved.';
+        msgEl.style.color = '#7FD957';
+      } catch (e) {
+        msgEl.textContent = 'Error: ' + (e.message || 'Failed to save');
+        msgEl.style.color = '#ff6b6b';
+      }
+    }
+    document.getElementById('btnSaveTelegram').onclick = saveTelegramSettings;
+    loadTelegramSettings();
   </script>
 </body>
 </html>

@@ -81,17 +81,6 @@
   </div>
 
   <div class="card">
-    <h2>Telegram (Predictor Broadcast)</h2>
-    <p style="color: #7FD957; font-size: 13px; margin-bottom: 12px;">Bot token from @BotFather. Channel ID (e.g. @channelname or -1001234567890).</p>
-    <label>Bot Token</label>
-    <input type="password" id="telegramToken" placeholder="123456:ABC-DEF..." style="margin: 8px 0 16px 0;" autocomplete="off" />
-    <label>Channel ID</label>
-    <input type="text" id="telegramChannel" placeholder="@mychannel or -1001234567890" style="margin: 8px 0 16px 0;" />
-    <button type="button" id="btnSaveTelegram" style="margin-top: 8px;">Save Telegram Settings</button>
-    <div id="telegramMsg" class="msg" style="margin-top: 8px;"></div>
-  </div>
-
-  <div class="card">
     <h2>All Keys</h2>
     <button id="btnRefresh">Refresh</button>
     <table id="keysTable">
@@ -216,47 +205,9 @@
       }
     }
 
-    async function loadTelegramSettings() {
-      try {
-        const res = await fetch(base + '/api/settings');
-        const s = await res.json();
-        document.getElementById('telegramToken').value = s.telegramBotToken || '';
-        document.getElementById('telegramChannel').value = s.telegramChannelId || '';
-      } catch (e) {
-        document.getElementById('telegramMsg').textContent = 'Could not load settings.';
-        document.getElementById('telegramMsg').style.color = '#ff6b6b';
-      }
-    }
-
-    async function saveTelegramSettings() {
-      const msgEl = document.getElementById('telegramMsg');
-      try {
-        const token = document.getElementById('telegramToken').value.trim();
-        const channelId = document.getElementById('telegramChannel').value.trim();
-        const res = await fetch(base + '/api/settings', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ telegramBotToken: token, telegramChannelId: channelId })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          msgEl.textContent = data.error || 'Save failed';
-          msgEl.style.color = '#ff6b6b';
-          return;
-        }
-        msgEl.textContent = 'Telegram settings saved.';
-        msgEl.style.color = '#7FD957';
-      } catch (e) {
-        msgEl.textContent = 'Error: ' + (e.message || 'Failed to save');
-        msgEl.style.color = '#ff6b6b';
-      }
-    }
-
     document.getElementById('btnGenerate').onclick = generate;
     document.getElementById('btnRefresh').onclick = loadKeys;
-    document.getElementById('btnSaveTelegram').onclick = saveTelegramSettings;
     loadKeys();
-    loadTelegramSettings();
   </script>
 </body>
 </html>
