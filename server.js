@@ -29,10 +29,6 @@ function generateKey() {
   return crypto.randomBytes(16).toString('hex');
 }
 
-function generateUid() {
-  return 'UID-' + crypto.randomBytes(8).toString('hex').toUpperCase();
-}
-
 // API: Validate UID + Key (used by the app)
 app.post('/api/validate', (req, res) => {
   const { uid, key } = req.body || {};
@@ -46,12 +42,20 @@ app.post('/api/validate', (req, res) => {
   res.status(found ? 200 : 401).json({ valid: found });
 });
 
-// API: Generate new UID + Key (admin)
+// API: Generate key for given UID (admin) - UID is written manually, key is auto-generated
 app.post('/api/generate', (req, res) => {
-  const uid = generateUid();
+  const uid = String((req.body?.uid || '').trim());
+  if (!uid) {
+    return res.status(400).json({ error: 'UID is required' });
+  }
   const key = generateKey();
   const data = loadKeys();
-  data.keys.push({ uid, key, createdAt: new Date().toISOString() });
+  const existing = data.keys.findIndex((k) => k.uid === uid);
+  if (existing >= 0) {
+    data.keys[existing] = { uid, key, createdAt: new Date().toISOString() };
+  } else {
+    data.keys.push({ uid, key, createdAt: new Date().toISOString() });
+  }
   saveKeys(data);
   res.json({ uid, key });
 });

@@ -55,17 +55,20 @@
       border-bottom: 1px solid #333;
     }
     th { color: #7FD957; }
+    label { display: block; color: #00FF41; margin-bottom: 4px; }
     .msg { margin-top: 12px; color: #7FD957; }
     .copy { margin-left: 8px; padding: 4px 8px; font-size: 12px; }
   </style>
 </head>
 <body>
   <h1>Badsha AutoBet Admin</h1>
-  <p style="color: #7FD957;">Generate UID and keys for app validation.</p>
+  <p style="color: #7FD957;">Enter UID (number). Key is generated and linked to that UID.</p>
 
   <div class="card">
-    <h2>Generate New Key</h2>
-    <button id="btnGenerate">Generate UID + Key</button>
+    <h2>Generate Key</h2>
+    <label>Enter UID (number)</label>
+    <input type="text" id="uidInput" placeholder="e.g. 9876543210" inputmode="numeric" style="margin: 8px 0 16px 0;" />
+    <button id="btnGenerate">Generate Key</button>
     <div id="result" class="msg"></div>
     <div id="generated" style="margin-top: 12px;"></div>
   </div>
@@ -85,13 +88,30 @@
     const base = window.location.origin;
 
     async function generate() {
-      const res = await fetch(base + '/api/generate', { method: 'POST' });
-      const { uid, key } = await res.json();
-      document.getElementById('result').textContent = 'Generated successfully.';
+      const uid = document.getElementById('uidInput').value.trim();
+      if (!uid) {
+        document.getElementById('result').textContent = 'Enter UID first.';
+        document.getElementById('result').style.color = '#ff6b6b';
+        return;
+      }
+      const res = await fetch(base + '/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        document.getElementById('result').textContent = data.error || 'Error';
+        document.getElementById('result').style.color = '#ff6b6b';
+        return;
+      }
+      const { uid: u, key } = data;
+      document.getElementById('result').textContent = 'Key generated successfully.';
+      document.getElementById('result').style.color = '#7FD957';
       document.getElementById('generated').innerHTML = `
-        <strong>UID:</strong> <pre>${uid}</pre>
+        <strong>UID:</strong> <pre>${u}</pre>
         <strong>Key:</strong> <pre>${key}</pre>
-        <button class="copy" onclick="navigator.clipboard.writeText('${uid}\\n${key}')">Copy</button>
+        <button class="copy" onclick="navigator.clipboard.writeText('${key}')">Copy Key</button>
       `;
       loadKeys();
     }
