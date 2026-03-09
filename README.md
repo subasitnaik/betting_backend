@@ -13,10 +13,13 @@ Backend for **Badsha AutoBet** app. Validates UID + Key and provides admin UI to
 ### 2. Vercel
 
 1. Import this repo in [vercel.com](https://vercel.com)
-2. Add Environment Variables:
+2. **Root Directory**: If the repo root is this project, leave blank. If this is a subfolder of a larger repo, set Root Directory to `betting_backend`
+3. Add Environment Variables:
    - `SUPABASE_URL` – your Supabase project URL
    - `SUPABASE_SERVICE_ROLE_KEY` – service_role key (not anon)
-3. Deploy
+4. Deploy
+
+**If you get 404**: Visit `/admin` or `/api/keys` directly. Root `/` redirects to `/admin`.
 
 ### 3. Android App
 
