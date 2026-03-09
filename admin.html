@@ -110,7 +110,8 @@
       const preview = document.getElementById('expiryPreview');
       if (d && t) {
         try {
-          const dt = new Date(d + 'T' + t + ':00');
+          const tPart = t.length <= 5 ? t + ':00' : t;
+          const dt = new Date(d + 'T' + tPart);
           preview.textContent = isNaN(dt.getTime()) ? 'Pick date and time' : 'Will expire: ' + dt.toLocaleString();
         } catch (e) {
           preview.textContent = 'Pick date and time';
@@ -139,13 +140,14 @@
           return;
         }
         const dateVal = document.getElementById('expiryDate').value;
-        const timeVal = document.getElementById('expiryTime').value;
+        let timeVal = document.getElementById('expiryTime').value;
         if (!dateVal || !timeVal) {
           resultEl.textContent = 'Select expiry date and time.';
           resultEl.style.color = '#ff6b6b';
           return;
         }
-        const expiry = new Date(dateVal + 'T' + timeVal + ':00').toISOString();
+        if (timeVal.length <= 5) timeVal += ':00';
+        const expiry = new Date(dateVal + 'T' + timeVal).toISOString();
         const res = await fetch(base + '/api/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
