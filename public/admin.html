@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Badsha AutoBet - Admin</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0a0a0a;
+      color: #00FF41;
+      margin: 0;
+      padding: 24px;
+      min-height: 100vh;
+    }
+    h1 { margin-top: 0; }
+    .card {
+      background: #161b22;
+      border: 1px solid #00FF41;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      max-width: 600px;
+    }
+    button {
+      background: #00FF41;
+      color: #0a0a0a;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover { opacity: 0.9; }
+    input, pre {
+      background: #0d1117;
+      border: 1px solid #00FF41;
+      color: #00FF41;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-family: monospace;
+      width: 100%;
+    }
+    pre { white-space: pre-wrap; word-break: break-all; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #333;
+    }
+    th { color: #7FD957; }
+    .msg { margin-top: 12px; color: #7FD957; }
+    .copy { margin-left: 8px; padding: 4px 8px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Badsha AutoBet Admin</h1>
+  <p style="color: #7FD957;">Generate UID and keys for app validation.</p>
+
+  <div class="card">
+    <h2>Generate New Key</h2>
+    <button id="btnGenerate">Generate UID + Key</button>
+    <div id="result" class="msg"></div>
+    <div id="generated" style="margin-top: 12px;"></div>
+  </div>
+
+  <div class="card">
+    <h2>All Keys</h2>
+    <button id="btnRefresh">Refresh</button>
+    <table id="keysTable">
+      <thead>
+        <tr><th>UID</th><th>Key</th><th>Created</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    const base = window.location.origin;
+
+    async function generate() {
+      const res = await fetch(base + '/api/generate', { method: 'POST' });
+      const { uid, key } = await res.json();
+      document.getElementById('result').textContent = 'Generated successfully.';
+      document.getElementById('generated').innerHTML = `
+        <strong>UID:</strong> <pre>${uid}</pre>
+        <strong>Key:</strong> <pre>${key}</pre>
+        <button class="copy" onclick="navigator.clipboard.writeText('${uid}\\n${key}')">Copy</button>
+      `;
+      loadKeys();
+    }
+
+    async function loadKeys() {
+      const res = await fetch(base + '/api/keys');
+      const keys = await res.json();
+      const tbody = document.querySelector('#keysTable tbody');
+      tbody.innerHTML = keys.map(k => `
+        <tr>
+          <td><code>${k.uid}</code></td>
+          <td><code>${k.key}</code></td>
+          <td>${new Date(k.createdAt).toLocaleString()}</td>
+        </tr>
+      `).join('') || '<tr><td colspan="3">No keys yet.</td></tr>';
+    }
+
+    document.getElementById('btnGenerate').onclick = generate;
+    document.getElementById('btnRefresh').onclick = loadKeys;
+    loadKeys();
+  </script>
+</body>
+</html>
