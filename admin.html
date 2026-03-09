@@ -58,6 +58,8 @@
     label { display: block; color: #00FF41; margin-bottom: 4px; }
     .msg { margin-top: 12px; color: #7FD957; }
     .copy { margin-left: 8px; padding: 4px 8px; font-size: 12px; }
+    .delete-btn { background: #ff6b6b; color: #fff; padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; }
+    .delete-btn:hover { opacity: 0.9; }
   </style>
 </head>
 <body>
@@ -82,7 +84,7 @@
     <button id="btnRefresh">Refresh</button>
     <table id="keysTable">
       <thead>
-        <tr><th>UID</th><th>Key</th><th>Expiry</th><th>Created</th></tr>
+        <tr><th>UID</th><th>Key</th><th>Expiry</th><th>Created</th><th></th></tr>
       </thead>
       <tbody></tbody>
     </table>
@@ -95,8 +97,10 @@
       const now = new Date();
       const tomorrow = new Date(now);
       tomorrow.setDate(tomorrow.getDate() + 1);
-      document.getElementById('expiryDate').value = tomorrow.toISOString().slice(0, 10);
-      document.getElementById('expiryTime').value = now.toTimeString().slice(0, 5);
+      const dateEl = document.getElementById('expiryDate');
+      const timeEl = document.getElementById('expiryTime');
+      if (!dateEl.value) dateEl.value = tomorrow.toISOString().slice(0, 10);
+      if (!timeEl.value) timeEl.value = now.toTimeString().slice(0, 5);
     }
     setDefaultExpiry();
 
@@ -109,6 +113,11 @@
       }
       const dateVal = document.getElementById('expiryDate').value;
       const timeVal = document.getElementById('expiryTime').value;
+      if (!dateVal || !timeVal) {
+        document.getElementById('result').textContent = 'Select expiry date and time.';
+        document.getElementById('result').style.color = '#ff6b6b';
+        return;
+      }
       const expiry = new Date(`${dateVal}T${timeVal}:00`).toISOString();
       const res = await fetch(base + '/api/generate', {
         method: 'POST',
@@ -142,8 +151,23 @@
           <td><code>${k.key}</code></td>
           <td>${k.expiry ? new Date(k.expiry).toLocaleString() : '-'}</td>
           <td>${new Date(k.createdAt).toLocaleString()}</td>
+          <td><button class="delete-btn" onclick="deleteKey('${k.uid}')">Delete</button></td>
         </tr>
-      `).join('') || '<tr><td colspan="4">No keys yet.</td></tr>';
+      `).join('') || '<tr><td colspan="5">No keys yet.</td></tr>';
+    }
+
+    async function deleteKey(uid) {
+      if (!confirm('Delete key for UID ' + uid + '?')) return;
+      const res = await fetch(base + '/api/delete?uid=' + encodeURIComponent(uid), { method: 'DELETE' });
+      if (res.ok) {
+        document.getElementById('result').textContent = 'Key deleted.';
+        document.getElementById('result').style.color = '#7FD957';
+        loadKeys();
+      } else {
+        const data = await res.json();
+        document.getElementById('result').textContent = data.error || 'Delete failed';
+        document.getElementById('result').style.color = '#ff6b6b';
+      }
     }
 
     document.getElementById('btnGenerate').onclick = generate;
