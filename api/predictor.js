@@ -1,11 +1,25 @@
 const https = require('https');
+const getSupabase = require('../lib/supabase');
 
 // In-memory store for latest predictor state
 let latestState = null;
 
-async function sendTelegramMessage(text) {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const channelId = process.env.TELEGRAM_CHANNEL_ID;
+async function getTelegramSettings() {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('app_settings')
+    .select('key, value')
+    .in('key', ['telegram_bot_token', 'telegram_channel_id']);
+  if (error) return { token: '', channelId: '' };
+  const map = {};
+  (data || []).forEach((r) => { map[r.key] = r.value || ''; });
+  return {
+    token: map.telegram_bot_token || '',
+    channelId: map.telegram_channel_id || '',
+  };
+}
+
+async function sendTelegramMessage(text, token, channelId) {
   if (!token || !channelId) return;
 
   const body = JSON.stringify({
@@ -83,12 +97,11 @@ module.exports = async (req, res) => {
 
     latestState = state;
 
-    // Send to Telegram if configured
-    const token = process.env.TELEGRAM_BOT_TOKEN;
-    const channelId = process.env.TELEGRAM_CHANNEL_ID;
+    // Send to Telegram if configured (from Supabase)
+    const { token, channelId } = await getTelegramSettings();
     if (token && channelId) {
       const msg = buildTelegramMessage(state);
-      await sendTelegramMessage(msg).catch((err) =>
+      await sendTelegramMessage(msg, token, channelId).catch((err) =>
         console.error('Telegram send error:', err)
       );
     }

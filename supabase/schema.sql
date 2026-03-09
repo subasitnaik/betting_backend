@@ -21,3 +21,23 @@ CREATE POLICY "Service role only" ON app_keys
   FOR ALL
   USING (false)
   WITH CHECK (false);
+
+-- App settings (Telegram, etc.) - editable via Admin
+CREATE TABLE IF NOT EXISTS app_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE app_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Service role only" ON app_settings;
+CREATE POLICY "Service role only" ON app_settings
+  FOR ALL
+  USING (false)
+  WITH CHECK (false);
+
+-- Seed default keys (run once)
+INSERT INTO app_settings (key, value) VALUES
+  ('telegram_bot_token', ''),
+  ('telegram_channel_id', '')
+ON CONFLICT (key) DO NOTHING;
