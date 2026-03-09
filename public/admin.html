@@ -68,6 +68,10 @@
     <h2>Generate Key</h2>
     <label>Enter UID (number)</label>
     <input type="text" id="uidInput" placeholder="e.g. 9876543210" inputmode="numeric" style="margin: 8px 0 16px 0;" />
+    <label>Expiry Date</label>
+    <input type="date" id="expiryDate" style="margin: 8px 0 16px 0;" />
+    <label>Expiry Time</label>
+    <input type="time" id="expiryTime" style="margin: 8px 0 16px 0;" />
     <button id="btnGenerate">Generate Key</button>
     <div id="result" class="msg"></div>
     <div id="generated" style="margin-top: 12px;"></div>
@@ -78,7 +82,7 @@
     <button id="btnRefresh">Refresh</button>
     <table id="keysTable">
       <thead>
-        <tr><th>UID</th><th>Key</th><th>Created</th></tr>
+        <tr><th>UID</th><th>Key</th><th>Expiry</th><th>Created</th></tr>
       </thead>
       <tbody></tbody>
     </table>
@@ -87,6 +91,15 @@
   <script>
     const base = window.location.origin;
 
+    function setDefaultExpiry() {
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      document.getElementById('expiryDate').value = tomorrow.toISOString().slice(0, 10);
+      document.getElementById('expiryTime').value = now.toTimeString().slice(0, 5);
+    }
+    setDefaultExpiry();
+
     async function generate() {
       const uid = document.getElementById('uidInput').value.trim();
       if (!uid) {
@@ -94,10 +107,13 @@
         document.getElementById('result').style.color = '#ff6b6b';
         return;
       }
+      const dateVal = document.getElementById('expiryDate').value;
+      const timeVal = document.getElementById('expiryTime').value;
+      const expiry = new Date(`${dateVal}T${timeVal}:00`).toISOString();
       const res = await fetch(base + '/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uid })
+        body: JSON.stringify({ uid, expiry })
       });
       const data = await res.json();
       if (!res.ok) {
@@ -124,9 +140,10 @@
         <tr>
           <td><code>${k.uid}</code></td>
           <td><code>${k.key}</code></td>
+          <td>${k.expiry ? new Date(k.expiry).toLocaleString() : '-'}</td>
           <td>${new Date(k.createdAt).toLocaleString()}</td>
         </tr>
-      `).join('') || '<tr><td colspan="3">No keys yet.</td></tr>';
+      `).join('') || '<tr><td colspan="4">No keys yet.</td></tr>';
     }
 
     document.getElementById('btnGenerate').onclick = generate;
