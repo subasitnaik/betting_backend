@@ -1,32 +1,35 @@
-# Betting Backend
+# Betting Backend (Supabase + Vercel)
 
-Backend for **Badsha AutoBet** app. Validates UID + Key and provides an admin UI to generate keys.
+Backend for **Badsha AutoBet** app. Validates UID + Key and provides admin UI to generate keys.
 
 ## Setup
 
-```bash
-npm install
-npm start
-```
+### 1. Supabase
 
-Runs on `http://localhost:3000` (or `PORT` env var).
+1. Create a project at [supabase.com](https://supabase.com)
+2. Go to **SQL Editor** and run `supabase/schema.sql`
+3. Get **Project URL** and **service_role key** from Settings → API
+
+### 2. Vercel
+
+1. Import this repo in [vercel.com](https://vercel.com)
+2. Add Environment Variables:
+   - `SUPABASE_URL` – your Supabase project URL
+   - `SUPABASE_SERVICE_ROLE_KEY` – service_role key (not anon)
+3. Deploy
+
+### 3. Android App
+
+Set `AuthApi.BASE_URL` in the app to your Vercel URL (e.g. `https://your-project.vercel.app`).
 
 ## Endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/validate` | Body: `{ "uid": "...", "key": "..." }` — Returns 200 if valid |
-| POST | `/api/generate` | Generates new UID + Key |
+| POST | `/api/validate` | Body: `{ "uid", "key" }` – Returns `{ valid, expiry }` |
+| POST | `/api/generate` | Body: `{ "uid", "expiry" }` – Generates key |
 | GET | `/api/keys` | Lists all keys |
 
 ## Admin
 
-Open **http://localhost:PORT/admin** to generate UID and keys manually.
-
-## Hosting
-
-Deploy to Railway, Render, or any Node.js host. Set `PORT` if required. Keys are stored in `keys.json` (create it on first generate).
-
-## App Configuration
-
-In the Android app, set `AuthApi.BASE_URL` in `AuthApi.kt` to your hosted URL (e.g. `https://your-app.railway.app`).
+Open **https://your-project.vercel.app/admin** to generate keys.
