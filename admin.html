@@ -70,10 +70,12 @@
     <h2>Generate Key</h2>
     <label>Enter UID (number)</label>
     <input type="text" id="uidInput" placeholder="e.g. 9876543210" inputmode="numeric" style="margin: 8px 0 16px 0;" />
-    <label>Expiry Date & Time</label>
-    <input type="datetime-local" id="expiryDateTime" style="margin: 8px 0 16px 0;" />
+    <label>Expiry Date</label>
+    <input type="date" id="expiryDate" style="margin: 8px 0 16px 0;" />
+    <label>Expiry Time</label>
+    <input type="time" id="expiryTime" style="margin: 8px 0 16px 0;" />
     <p id="expiryPreview" style="color: #7FD957; font-size: 12px; margin-top: 4px;"></p>
-    <button id="btnGenerate">Generate Key</button>
+    <button type="button" id="btnGenerate">Generate Key</button>
     <div id="result" class="msg"></div>
     <div id="generated" style="margin-top: 12px;"></div>
   </div>
@@ -96,63 +98,80 @@
       const now = new Date();
       const tomorrow = new Date(now);
       tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(now.getHours(), now.getMinutes(), 0, 0);
-      const el = document.getElementById('expiryDateTime');
-      if (!el.value) {
-        const y = tomorrow.getFullYear();
-        const m = String(tomorrow.getMonth() + 1).padStart(2, '0');
-        const d = String(tomorrow.getDate()).padStart(2, '0');
-        const h = String(tomorrow.getHours()).padStart(2, '0');
-        const min = String(tomorrow.getMinutes()).padStart(2, '0');
-        el.value = `${y}-${m}-${d}T${h}:${min}`;
-      }
+      const dateEl = document.getElementById('expiryDate');
+      const timeEl = document.getElementById('expiryTime');
+      if (!dateEl.value) dateEl.value = tomorrow.toISOString().slice(0, 10);
+      if (!timeEl.value) timeEl.value = now.toTimeString().slice(0, 5);
       updateExpiryPreview();
     }
     function updateExpiryPreview() {
-      const val = document.getElementById('expiryDateTime').value;
-      document.getElementById('expiryPreview').textContent = val
-        ? 'Will expire: ' + new Date(val + ':00').toLocaleString()
-        : 'Pick date and time above';
+      const d = document.getElementById('expiryDate').value;
+      const t = document.getElementById('expiryTime').value;
+      const preview = document.getElementById('expiryPreview');
+      if (d && t) {
+        try {
+          const dt = new Date(d + 'T' + t + ':00');
+          preview.textContent = isNaN(dt.getTime()) ? 'Pick date and time' : 'Will expire: ' + dt.toLocaleString();
+        } catch (e) {
+          preview.textContent = 'Pick date and time';
+        }
+      } else {
+        preview.textContent = 'Pick date and time';
+      }
     }
-    setDefaultExpiry();
-    document.getElementById('expiryDateTime').addEventListener('change', updateExpiryPreview);
-    document.getElementById('expiryDateTime').addEventListener('input', updateExpiryPreview);
+
+    function init() {
+      setDefaultExpiry();
+      document.getElementById('expiryDate').addEventListener('change', updateExpiryPreview);
+      document.getElementById('expiryTime').addEventListener('input', updateExpiryPreview);
+      document.getElementById('expiryTime').addEventListener('change', updateExpiryPreview);
+      document.getElementById('expiryDate').addEventListener('input', updateExpiryPreview);
+    }
+    init();
 
     async function generate() {
-      const uid = document.getElementById('uidInput').value.trim();
-      if (!uid) {
-        document.getElementById('result').textContent = 'Enter UID first.';
-        document.getElementById('result').style.color = '#ff6b6b';
-        return;
+      const resultEl = document.getElementById('result');
+      try {
+        const uid = document.getElementById('uidInput').value.trim();
+        if (!uid) {
+          resultEl.textContent = 'Enter UID first.';
+          resultEl.style.color = '#ff6b6b';
+          return;
+        }
+        const dateVal = document.getElementById('expiryDate').value;
+        const timeVal = document.getElementById('expiryTime').value;
+        if (!dateVal || !timeVal) {
+          resultEl.textContent = 'Select expiry date and time.';
+          resultEl.style.color = '#ff6b6b';
+          return;
+        }
+        const expiry = new Date(dateVal + 'T' + timeVal + ':00').toISOString();
+        const res = await fetch(base + '/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uid, expiry })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          resultEl.textContent = data.error || 'Error';
+          resultEl.style.color = '#ff6b6b';
+          return;
+        }
+        const key = data.key;
+        const savedExpiry = data.expiry;
+        resultEl.textContent = 'Key generated successfully.';
+        resultEl.style.color = '#7FD957';
+        document.getElementById('generated').innerHTML = `
+          <strong>UID:</strong> <pre>${uid}</pre>
+          <strong>Key:</strong> <pre>${key}</pre>
+          <strong>Expiry:</strong> <pre>${savedExpiry ? new Date(savedExpiry).toLocaleString() : '-'}</pre>
+          <button class="copy" onclick="navigator.clipboard.writeText('${key}')">Copy Key</button>
+        `;
+        loadKeys();
+      } catch (err) {
+        resultEl.textContent = 'Error: ' + (err.message || 'Failed to generate');
+        resultEl.style.color = '#ff6b6b';
       }
-      const dateTimeVal = document.getElementById('expiryDateTime').value;
-      if (!dateTimeVal) {
-        document.getElementById('result').textContent = 'Select expiry date and time.';
-        document.getElementById('result').style.color = '#ff6b6b';
-        return;
-      }
-      const expiry = new Date(dateTimeVal + ':00').toISOString();
-      const res = await fetch(base + '/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uid, expiry })
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        document.getElementById('result').textContent = data.error || 'Error';
-        document.getElementById('result').style.color = '#ff6b6b';
-        return;
-      }
-      const { key, expiry } = data;
-      document.getElementById('result').textContent = 'Key generated successfully.';
-      document.getElementById('result').style.color = '#7FD957';
-      document.getElementById('generated').innerHTML = `
-        <strong>UID:</strong> <pre>${uid}</pre>
-        <strong>Key:</strong> <pre>${key}</pre>
-        <strong>Expiry:</strong> <pre>${expiry ? new Date(expiry).toLocaleString() : '-'}</pre>
-        <button class="copy" onclick="navigator.clipboard.writeText('${key}')">Copy Key</button>
-      `;
-      loadKeys();
     }
 
     async function loadKeys() {
