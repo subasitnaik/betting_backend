@@ -44,7 +44,14 @@ app.post('/api/validate', (req, res) => {
 
 // API: Generate key for given UID (admin) - UID is written manually, key is auto-generated
 app.post('/api/generate', (req, res) => {
-  const uid = String((req.body?.uid || '').trim());
+  let uid = req.body?.uid;
+  if (typeof req.body === 'string') {
+    try {
+      const parsed = JSON.parse(req.body);
+      uid = parsed.uid;
+    } catch {}
+  }
+  uid = String((uid || '').trim());
   if (!uid) {
     return res.status(400).json({ error: 'UID is required' });
   }

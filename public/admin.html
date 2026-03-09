@@ -105,11 +105,11 @@
         document.getElementById('result').style.color = '#ff6b6b';
         return;
       }
-      const { uid: u, key } = data;
+      const { key } = data;
       document.getElementById('result').textContent = 'Key generated successfully.';
       document.getElementById('result').style.color = '#7FD957';
       document.getElementById('generated').innerHTML = `
-        <strong>UID:</strong> <pre>${u}</pre>
+        <strong>UID:</strong> <pre>${uid}</pre>
         <strong>Key:</strong> <pre>${key}</pre>
         <button class="copy" onclick="navigator.clipboard.writeText('${key}')">Copy Key</button>
       `;
